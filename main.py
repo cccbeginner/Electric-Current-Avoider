@@ -9,6 +9,7 @@ class Color:
     WHITE = (255, 255, 255)
     GRAY = (127, 127, 127)
     RED = (255, 0, 0)
+    ORANGE = (255, 192, 0)
     YELLOW = (255, 255, 0)
     GREEN = (0, 255, 0)
     BLUE = (0, 0, 255)
@@ -22,12 +23,14 @@ ball_save_color = Color.GREEN
 ball_collide_color = Color.RED
 ball_radius = 21
 start_point = (40, 680)
+end_point = (1150, 20)
 
 class Ball(pygame.sprite.Sprite):
 
     STATUS_UNSTARTED = 111111
     STATUS_SAVED = 222222
     STATUS_CRACKED = 333333
+    STATUS_FINISHED = 444444
 
     def __init__(self, color_save, color_crack, start_pos=(0,0)):
         self.pos = start_pos
@@ -48,6 +51,8 @@ class Ball(pygame.sprite.Sprite):
             self.pos = mouse.get_pos()
         elif self.status == Ball.STATUS_CRACKED:
             color = self.color_crack
+        elif self.status == Ball.STATUS_FINISHED:
+            color = self.color_save
         pygame.draw.circle(self.surface, color, self.pos, ball_radius, 0)
         self.mask = pygame.mask.from_threshold(self.surface, color, (1,1,1,255))
         self.rect = self.mask.get_rect()
@@ -102,12 +107,15 @@ def main():
     # make startup button
     start_btn = Button('START', 60, Color.YELLOW, Color.BLUE, (start_point[0]-20, start_point[1]-20))
 
+    # make endup button
+    end_btn = Button('GOAL', 60, Color.YELLOW, Color.BLUE, end_point)
+
     while True:
 
         # renew rate: 60 times/sec
         clock.tick(60)
         
-        # background
+        # refresh screen
         window_surface.fill(background_color)
 
         # wall_surface
@@ -117,7 +125,9 @@ def main():
         window_surface.blit(ball.surface, (0, 0))
 
         # start btn surface
-        if ball.status != Ball.STATUS_SAVED:
+        if ball.status == Ball.STATUS_SAVED or ball.status == Ball.STATUS_FINISHED:
+            window_surface.blit(end_btn.surface, (0, 0))
+        else:
             window_surface.blit(start_btn.surface, (0, 0))
 
         # test collision
@@ -129,6 +139,16 @@ def main():
                 print("save")
                 ball.update()
         
+        # test if reached the goal
+        if ball.status == Ball.STATUS_SAVED:
+            if end_btn.mouse_touched():
+                ball.update_status(Ball.STATUS_FINISHED)
+        
+        if ball.status == Ball.STATUS_FINISHED:
+            font = pygame.font.SysFont('Comic Sans MS', 300)
+            victory_surface = font.render('Victory!', False, Color.ORANGE)
+            w,h = victory_surface.get_size()
+            window_surface.blit(victory_surface, (WIDTH/2-w/2, HEIGHT/2-h/2))
 
         # Update only the area that we specified with the `update_rect`.
         pygame.display.update((0,0,WIDTH,HEIGHT))
